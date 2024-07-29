@@ -103,29 +103,24 @@ public class ExoriaBot {
         client.addListener(new SessionAdapter() {
             @Override
             public void disconnected(DisconnectedEvent event) {
-                log.info("Disconnected: {}" + event.getReason());
-                client.connect(true);
+                if (!event.getReason().toString().contains("Connection timed out")) {
+                    log.info("Disconnected: {}" + event.getReason());
+                }
             }
 
             @Override
             public void disconnecting(DisconnectingEvent event) {
-                log.info("DisconnectingEvent: {}", event.getReason());
-                client.connect(true);
+                if (!event.getReason().toString().contains("Connection timed out")) {
+                    log.info("Disconnecting: {}" + event.getReason());
+                }
             }
 
             @Override
             public void packetReceived(Session session, Packet packet) {
                 if (packet instanceof ClientboundLoginPacket) {
                     log.info("Connected: " + username);
+                    session.send(new ServerboundChatPacket("Hallo", Instant.now().toEpochMilli(), 0L, null, 0, new BitSet()));
                     connecteds++;
-                    while (session.isConnected()) {
-                        session.send(new ServerboundChatPacket("Hallo", Instant.now().toEpochMilli(), 0L, null, 0, new BitSet()));
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
                 }
             }
         });
