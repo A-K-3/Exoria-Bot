@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProxyLoader {
-
     public static List<ProxyInfo> loadProxies(File file) {
         List<ProxyInfo> proxies = new ArrayList<>();
 
