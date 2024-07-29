@@ -22,42 +22,50 @@ public class MinecraftClient {
     private static final Logger log = LoggerFactory.getLogger(MinecraftClient.class);
     private static int connecteds = 0;
 
-    public static void login(String username, ProxyInfo PROXY, String host, int port) {
+    public static void login(final String username, final ProxyInfo proxy, final String host, final int port) {
         MinecraftProtocol protocol = new MinecraftProtocol(username);
         SessionService sessionService = new SessionService();
-        sessionService.setProxy(PROXY);
+        sessionService.setProxy(proxy);
 
-        Session client = new TcpClientSession(host, port, protocol, PROXY);
+        Session client = new TcpClientSession(host, port, protocol, proxy);
         client.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
 
-        System.out.println("Logging in as " + username + " with proxy " + PROXY.type() + " " + PROXY.address());
+        log.info("Logging in as {} with proxy {} {}", username, proxy.type(), proxy.address());
 
         client.addListener(new SessionAdapter() {
             @Override
             public void disconnected(DisconnectedEvent event) {
                 if (!event.getReason().toString().contains("Connection timed out")) {
-                    log.info("Disconnected: {}" + event.getReason());
+                    log.info("Disconnected: {}", event.getReason());
                 }
             }
 
             @Override
             public void disconnecting(DisconnectingEvent event) {
                 if (!event.getReason().toString().contains("Connection timed out")) {
-                    log.info("Disconnecting: {}" + event.getReason());
+                    log.info("Disconnecting: {}", event.getReason());
                 }
             }
 
             @Override
             public void packetReceived(Session session, Packet packet) {
                 if (packet instanceof ClientboundLoginPacket) {
-                    log.info("Connected: " + username);
+                    log.info("Connected: {}", username);
                     session.send(new ServerboundChatPacket("Hallo", Instant.now().toEpochMilli(), 0L, null, 0, new BitSet()));
-                    connecteds++;
+                    incrementConnecteds();
                 }
             }
         });
 
         client.connect();
-        log.info("Conectados: " + connecteds);
+        log.info("Total connected clients: {}", getConnecteds());
+    }
+
+    private static synchronized void incrementConnecteds() {
+        connecteds++;
+    }
+
+    public static synchronized int getConnecteds() {
+        return connecteds;
     }
 }
