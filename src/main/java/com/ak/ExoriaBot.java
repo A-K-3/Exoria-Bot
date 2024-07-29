@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -23,22 +24,43 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class ExoriaBot {
     private static final Logger log = LoggerFactory.getLogger(ExoriaBot.class);
-    private static final boolean SPAWN_SERVER = true;
-    private static final boolean VERIFY_USERS = false;
-    private static final String HOST = "";
-    private static final int PORT = 25565;
     private static int connecteds = 0;
 
     public static void main(String[] args) {
-        ArrayList<ProxyInfo> proxies = (ArrayList<ProxyInfo>) ProxyLoader.loadProxies(new File("proxies.txt"));
+        if (args.length < 4) {
+            System.out.println("Usage: java ExoriaBot <host> <port> <iterations> <sleepTime>");
+            return;
+        }
+
+        String host = args[0];
+        int port = Integer.parseInt(args[1]);
+        int iterations = Integer.parseInt(args[2]);
+        int sleepTime = Integer.parseInt(args[3]);
+        String proxiesFilePath = "./proxies.txt";
+
+        File proxiesFile = new File(proxiesFilePath);
+        if (!proxiesFile.exists()) {
+            try {
+                proxiesFile.createNewFile();
+                System.out.println("Proxies file not found. Created empty proxies file at " + proxiesFilePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+
+        ArrayList<ProxyInfo> proxies = (ArrayList<ProxyInfo>) ProxyLoader.loadProxies(proxiesFile);
 
         Thread mainThread = new Thread(() -> {
-
-            for (int i = 0; i < 1415; i++) {
-
+            for (int i = 0; i < iterations; i++) {
+                try {
+                    Thread.sleep(sleepTime);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
 
                 Thread thread = new Thread(() -> {
-                    login(generateRandomUser(), proxies.get((int) (Math.random() * proxies.size())));
+                    login(generateRandomUser(), proxies.get((int) (Math.random() * proxies.size())), host, port);
                 });
                 thread.start();
             }
@@ -54,21 +76,17 @@ public class ExoriaBot {
                 .collect(java.util.stream.Collectors.joining());
     }
 
-    private static void login(String username, ProxyInfo PROXY) {
-        MinecraftProtocol protocol;
-
-        protocol = new MinecraftProtocol(username);
+    private static void login(String username, ProxyInfo PROXY, String host, int port) {
+        MinecraftProtocol protocol = new MinecraftProtocol(username);
         SessionService sessionService = new SessionService();
         sessionService.setProxy(PROXY);
 
-        Session client = new TcpClientSession(HOST, PORT, protocol, PROXY);
+        Session client = new TcpClientSession(host, port, protocol, PROXY);
         client.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
 
         System.out.println("Logging in as " + username + " with proxy " + PROXY.type() + " " + PROXY.address());
 
-
         client.addListener(new SessionAdapter() {
-
             @Override
             public void disconnected(DisconnectedEvent event) {
                 log.info("Disconnected: {}" + event.getReason());
@@ -99,8 +117,6 @@ public class ExoriaBot {
         });
 
         client.connect();
-
         log.info("Conectados: " + connecteds);
     }
-
 }
