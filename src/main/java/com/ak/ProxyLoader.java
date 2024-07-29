@@ -1,6 +1,8 @@
 package com.ak;
 
 import org.geysermc.mcprotocollib.network.ProxyInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -10,10 +12,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProxyLoader {
-    public static List<ProxyInfo> loadProxies(File file) {
+
+    private static final Logger log = LoggerFactory.getLogger(ProxyLoader.class);
+
+
+    public static List<ProxyInfo> loadProxies(String filePath) {
+        File proxiesFile = new File(filePath);
+        if (!proxiesFile.exists()) {
+            try {
+                if (proxiesFile.createNewFile()) {
+                    log.info("Proxies file not found. Created empty proxies file at " + filePath);
+                }
+            } catch (IOException e) {
+                log.error("Error creating proxies file.", e);
+            }
+            return new ArrayList<>();
+        }
+        return ProxyLoader.loadProxies(proxiesFile);
+    }
+
+    private static List<ProxyInfo> loadProxies(File proxiesFile) {
         List<ProxyInfo> proxies = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(proxiesFile))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String protocol = "";
@@ -44,4 +65,6 @@ public class ProxyLoader {
 
         return proxies;
     }
+
+
 }
