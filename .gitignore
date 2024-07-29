@@ -46,6 +46,7 @@ hs_err_pid*
 .springBeans
 .sts4-cache
 
+/.idea/
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
