@@ -27,6 +27,8 @@ public class ProxyLoader {
                 } else if (line.startsWith("socks4://")) {
                     protocol = "SOCKS4";
                     line = line.substring(9);
+                } else {
+                    protocol = "SOCKS5";
                 }
 
                 String[] parts = line.split(":");
@@ -38,7 +40,7 @@ public class ProxyLoader {
                 proxies.add(proxy);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error reading proxies file: " + e.getMessage());
         }
 
         return proxies;
