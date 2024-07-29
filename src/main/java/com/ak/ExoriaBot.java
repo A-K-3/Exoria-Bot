@@ -27,15 +27,24 @@ public class ExoriaBot {
     private static int connecteds = 0;
 
     public static void main(String[] args) {
-        if (args.length < 4) {
-            System.out.println("Usage: java ExoriaBot <host> <port> <iterations> <sleepTime>");
+        if (args.length < 3) {
+            System.out.println("Usage: java ExoriaBot <host> <port> |<iterations>| <sleepTime>");
             return;
         }
 
         String host = args[0];
         int port = Integer.parseInt(args[1]);
-        int iterations = Integer.parseInt(args[2]);
-        int sleepTime = Integer.parseInt(args[3]);
+        int iterations;
+        int sleepTime;
+
+        if (args.length == 3) {
+            iterations = Integer.MAX_VALUE; // Infinite loop
+            sleepTime = Integer.parseInt(args[2]);
+        } else {
+            iterations = Integer.parseInt(args[2]);
+            sleepTime = Integer.parseInt(args[3]);
+        }
+
         String proxiesFilePath = "./proxies.txt";
 
         File proxiesFile = new File(proxiesFilePath);
@@ -50,6 +59,11 @@ public class ExoriaBot {
         }
 
         ArrayList<ProxyInfo> proxies = (ArrayList<ProxyInfo>) ProxyLoader.loadProxies(proxiesFile);
+
+        if (proxies.isEmpty()) {
+            System.out.println("No proxies found in " + proxiesFilePath);
+            return;
+        }
 
         Thread mainThread = new Thread(() -> {
             for (int i = 0; i < iterations; i++) {
