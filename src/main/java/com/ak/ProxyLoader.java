@@ -5,9 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,26 +16,24 @@ public class ProxyLoader {
 
     private static final Logger log = LoggerFactory.getLogger(ProxyLoader.class);
 
-
     public static List<ProxyInfo> loadProxies(String filePath) {
-        File proxiesFile = new File(filePath);
-        if (!proxiesFile.exists()) {
+        Path proxiesPath = Paths.get(filePath);
+        if (Files.notExists(proxiesPath)) {
             try {
-                if (proxiesFile.createNewFile()) {
-                    log.info("Proxies file not found. Created empty proxies file at " + filePath);
-                }
+                Files.createFile(proxiesPath);
+                log.info("Proxies file not found. Created empty proxies file at " + filePath);
             } catch (IOException e) {
                 log.error("Error creating proxies file.", e);
             }
             return new ArrayList<>();
         }
-        return ProxyLoader.loadProxies(proxiesFile);
+        return ProxyLoader.loadProxies(proxiesPath);
     }
 
-    private static List<ProxyInfo> loadProxies(File proxiesFile) {
+    private static List<ProxyInfo> loadProxies(Path proxiesPath) {
         List<ProxyInfo> proxies = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(proxiesFile))) {
+        try (BufferedReader br = Files.newBufferedReader(proxiesPath)) {
             String line;
             while ((line = br.readLine()) != null) {
                 String protocol = "";
@@ -48,23 +47,31 @@ public class ProxyLoader {
                     protocol = "SOCKS4";
                     line = line.substring(9);
                 } else {
-                    protocol = "SOCKS5";
+                    log.warn("Unknown protocol in line: " + line);
+                    continue;
                 }
 
                 String[] parts = line.split(":");
-                String ip = parts[0];
-                int port = Integer.parseInt(parts[1]);
+                if (parts.length != 2) {
+                    log.warn("Invalid proxy format in line: " + line);
+                    continue;
+                }
 
-                ProxyInfo.Type type = ProxyInfo.Type.valueOf(protocol);
-                ProxyInfo proxy = new ProxyInfo(type, ip, port);
-                proxies.add(proxy);
+                try {
+                    String ip = parts[0];
+                    int port = Integer.parseInt(parts[1]);
+
+                    ProxyInfo.Type type = ProxyInfo.Type.valueOf(protocol);
+                    ProxyInfo proxy = new ProxyInfo(type, ip, port);
+                    proxies.add(proxy);
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid port number in line: " + line);
+                }
             }
         } catch (IOException e) {
-            System.out.println("Error reading proxies file: " + e.getMessage());
+            log.error("Error reading proxies file: ", e);
         }
 
         return proxies;
     }
-
-
 }
